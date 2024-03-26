@@ -5,8 +5,7 @@ We investigated circulating levels of brain injury, inflammation, and vascular b
 
 ## Study collaborators
 
-Cesc Bertran-Cobo, Elin Dumont, Naqib Rafieqin Noordin, Lau Meng Yee, Chris Drakeley, Sanjeev Krishna, Yee Ling Lau, Samuel C Wassmer.
-Correspondence to Prof Dr Yee Ling Lau, Universiti Malaya, Kuala Lumpur, Malaysia (lauyeeling@um.edu.my) and Dr Samuel C Wassmer, London School of Hygiene and Tropical Medicine, London, UK (Sam.Wassmer@lshtm.ac.uk)
+Cesc Bertran-Cobo, Elin Dumont, Naqib Rafieqin Noordin, Lau Meng Yee, Chris Drakeley, Sanjeev Krishna, Yee Ling Lau, Samuel C Wassmer. Correspondence to Prof Dr Yee Ling Lau, Universiti Malaya, Kuala Lumpur, Malaysia (lauyeeling@um.edu.my) and Dr Samuel C Wassmer, London School of Hygiene and Tropical Medicine, London, UK (Sam.Wassmer@lshtm.ac.uk).
 
 
 ## Repository contents
