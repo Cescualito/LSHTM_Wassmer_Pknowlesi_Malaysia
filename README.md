@@ -1,6 +1,6 @@
 # LSHTM_Wassmer_Pknowlesi_Malaysia
 
-We investigated circulating levels of brain injury, inflammation, and vascular biomarkers in a cohort of *Plasmodium knowlesi*-infected patients and uninfected, healthy controls from ![Peninsular Malaysia](path/to/Pk_Malaysia_map.html).
+We investigated circulating levels of brain injury, inflammation, and vascular biomarkers in a cohort of *Plasmodium knowlesi*-infected patients and uninfected, healthy controls from ![Peninsular Malaysia](https://github.com/Cescualito/LSHTM_Wassmer_Pknowlesi_Malaysia/blob/main/Pk_Malaysia_map.html).
 
 
 ## Study collaborators
@@ -18,7 +18,3 @@ Cesc Bertran-Cobo, Elin Dumont, Naqib Rafieqin Noordin, Lau Meng Yee, Chris Drak
 ## Publication link
 
 The original manuscript can be found here.
-
-
-## Study sites
-
