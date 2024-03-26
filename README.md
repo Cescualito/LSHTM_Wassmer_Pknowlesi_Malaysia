@@ -12,7 +12,7 @@ Cesc Bertran-Cobo, Elin Dumont, Naqib Rafieqin Noordin, Lau Meng Yee, Chris Drak
 
 `Pk_Malaysia_analysis.Rmd` contains the complete R code used for conducting the entire study analysis. It includes data preprocessing, statistical tests, and data visualization. 
 
-`Pk_Malaysia_report.html` presents the interactive analysis and results generated from the study's data using the accompanying .Rmd script. The report serves as a complete summary of the study's analytical process and outcomes, providing insights into the research findings. Readers can explore the report to gain a thorough understanding of the study's methodology, results, and implications. This file includes the study ==codebook==.
+`Pk_Malaysia_report.html` presents the interactive analysis and results generated from the study's data using the accompanying .Rmd script. The report serves as a complete summary of the study's analytical process and outcomes, providing insights into the research findings. Readers can explore the report to gain a thorough understanding of the study's methodology, results, and implications. This file includes the study ==codebook==
 
 
 ## Publication link
