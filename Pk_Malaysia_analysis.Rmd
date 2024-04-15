@@ -1,0 +1,466 @@
+---
+title: "*Plasmodium knowlesi* infection is associated with elevated circulating biomarkers of brain injury and endothelial activation" 
+author: "Cescualito, RA (cesc.bertran-cobo@lshtm.ac.uk)"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 6
+    code_folding: hide
+---
+
+<a id="top"></a>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **Background** 
+
+Malaria, a life-threatening disease transmitted by mosquitoes and caused by *Plasmodium* parasites, presents a significant global health challenge. In 2022, it accounted for an estimated 249 million cases worldwide, resulting in approximately 608,000 deaths. Within Southeast Asia, including Malaysia, malaria remains a persistent public health concern, historically attributed to *Plasmodium falciparum* and *vivax* parasites. Despite successful national efforts to eliminate indigenous malaria cases in Malaysia since 2018, the emergence of *Plasmodium knowlesi* (*Pk*), previously confined to macaque monkeys but now infecting humans, has raised new alarms.
+
+**Cerebral malaria** is one of the most severe forms of malaria infection, affecting the brain and often causing coma. Survivors can suffer from brain problems even after the infection is treated. While cerebral malaria is usually linked to *Plasmodium falciparum*, there have been cases where other types of Plasmodium parasites also caused severe brain issues. Recent research has shown that *Pk* infections in Southeast Asia can also lead to severe complications, sometimes even resulting in death. Post-mortem examinations in one fatal case of severe *Pk* infection revealed brain damage similar to that seen in cerebral malaria caused by *Plasmodium falciparum*, even though *Pk* parasites don't usually bind to brain blood vessels like *Plasmodium falciparum* does.
+
+Our own research has found brain changes in Indian patients with **severe malaria**, even if they didn't have coma. We observed higher levels of a protein associated with brain damage in these patients (**S100B**), along with kidney problems. This suggests that malaria can impact the brain, regardless of whether coma occurs, and kidney issues may worsen the situation. Despite similarities between cerebral malaria and severe *Pk* infections, and the frequent occurrence of kidney problems in severe *Pk* malaria, we still don't know much about how *Pk* infection affects the human brain. To address this gap, we studied biomarkers related to brain injury, blood vessel activity, and inflammation in Malaysian patients infected with *Pk* and compared them to healthy individuals.
+
+# **Methodology**
+
+## **Participants and samples**
+
+This study utilized stored plasma samples collected during a larger project conducted in Peninsular Malaysia from December 2019 to January 2023. Adult patients exhibiting symptoms of malaria and seeking treatment at government hospitals or private clinics across several states in Malaysia were invited to participate. Additionally, community-matched, age-matched individuals without malaria were recruited from various communities in Malaysia. These individuals were considered part of high-risk groups, such as those working in or near forests, including farmers, hunters, and natural resource collectors.
+
+Blood samples were collected after participants provided informed consent. All data were anonymised to protect participants' privacy. Malaria infection in each sample was confirmed using microscopic examination and molecular techniques. Out of the 50 individuals initially sampled, 38 had relevant clinical information available for this study, including parasitaemia levels, which our group has previously identified as an age-independent factor associated with severity in *falciparum* malaria. For this study, we analyzed de-identified samples from 19 infected patients and 19 healthy controls from Malaysia.
+
+This study was reviewed and approved by the Medical Research and Ethics Committee of the Ministry of Health in Malaysia (**22-02557-1KV**) and by the Observational/Interventions Research Ethics Committee at the London School of Hygiene and Tropical Medicine, UK (**27902**). The samples are registered with the Human Tissue Authority, in accordance with UK national guidelines.
+
+# **Statistical analysis**
+[Go back to index](#top)
+
+## **Load required packages**
+
+```{r load packages, results="hide", message=FALSE}
+  library(data.table)
+  library(plyr)
+  library(tidyverse)
+  library(readr)
+  library(readxl)
+  library(haven)
+  library(ggplot2)
+  library(lavaan)
+  library(cowplot)
+  library(rmarkdown)
+  library(gtsummary)
+  library(pheatmap)
+  library(ggpubr)
+  library(knitr)
+  library(kableExtra)
+  library(plotly)
+  library(remotes)
+  library(leaflet)
+  library(sf)
+  library(webshot2)
+  library(htmlwidgets)
+  library(Hmisc)
+```
+
+## **Prepare datasets**
+
+```{r loaddata, results="hide"}
+# Read Data
+
+  Pk_Malaysia_database <- read_excel("/home/cescualito/Dropbox/LABORAL/LSHTM/Wassmer Lab - Cesc Bertran-Cobo/Luminex/2023-05-09_Malaysia_samples/Analysis/Databases/Pk_Malaysia_database.xlsx")
+  Pk_Malaysia_database[, (4:5)] <- lapply(Pk_Malaysia_database[, (4:5)], as.factor)
+  Pk_Malaysia_database[, (7:8)] <- lapply(Pk_Malaysia_database[, (7:8)], as.factor)
+  
+  Pk_Malaysia_Luminex <- read_excel("/home/cescualito/Dropbox/LABORAL/LSHTM/Wassmer Lab - Cesc Bertran-Cobo/Luminex/2023-05-09_Malaysia_samples/Analysis/Databases/Pk_Malaysia_Luminex.xlsx")
+  Pk_Malaysia_Luminex$Dilution <- factor(Pk_Malaysia_Luminex$Dilution)
+  Pk_Malaysia_Luminex <- Pk_Malaysia_Luminex[,-57]
+  
+  Pk_Malaysia_S100B <- read_excel("/home/cescualito/Dropbox/LABORAL/LSHTM/Wassmer Lab - Cesc Bertran-Cobo/Luminex/2023-05-09_Malaysia_samples/Analysis/Databases/Pk_Malaysia_S100B.xlsx")
+  
+  Pk_Malaysia_Simoa <- read_excel("/home/cescualito/Dropbox/LABORAL/LSHTM/Wassmer Lab - Cesc Bertran-Cobo/Luminex/2023-05-09_Malaysia_samples/Analysis/Databases/Pk_Malaysia_Simoa.xlsx")
+  
+# Merge based on sample_ID
+  
+  Pk_Malaysia_1in2 <- Pk_Malaysia_Luminex %>% filter(Dilution == "1in2") # Removing biomarkers at 1:50 dilution
+  Pk_Malaysia_1in2 <- Pk_Malaysia_1in2[,!names(Pk_Malaysia_1in2) %in% c("CCL18", "CCL5", "CRP", "Fetuin A", "Lipocalin 2", 
+                                                                        "MPO", "PDGF BB", "Serpin E1", "Serpin F1", "NSE", "IL-1RA")] 
+  Pk_Malaysia_1in2$`Ang-2/Ang-1 ratio` <- Pk_Malaysia_1in2$`Ang-2`/Pk_Malaysia_1in2$`Ang-1`
+  
+  Pk_Malaysia_1in50 <- Pk_Malaysia_Luminex %>% filter(Dilution == "1in50") # Removing biomarkers at 1:2 dilution
+  Pk_Malaysia_1in50 <- Pk_Malaysia_1in50[,names(Pk_Malaysia_1in50) %in% c("sample_ID", "CCL18", "CCL5", "CRP", "Fetuin A", 
+                                                                          "Lipocalin 2", "MPO", "PDGF BB", "Serpin E1", "Serpin F1", 
+                                                                          "NSE", "IL-1RA")] 
+  
+  Pk_Malaysia <- merge(x = Pk_Malaysia_1in2, y = Pk_Malaysia_1in50, by = "sample_ID", all.x = TRUE)
+  Pk_Malaysia <- Pk_Malaysia[,-c(2:5)] # Remove unnecessary Luminex info
+  Pk_Malaysia <- Pk_Malaysia[,!names(Pk_Malaysia) %in% c("GFAP", "UCHL-1", "Tau total")] # Remove biomarkers re-analysied with SIMOA
+  
+  Pk_Malaysia <- merge(x = Pk_Malaysia, y = Pk_Malaysia_database, by = "sample_ID", all.x = TRUE)
+  Pk_Malaysia <- merge(x = Pk_Malaysia, y = Pk_Malaysia_S100B, by = "sample_ID", all.x = TRUE)
+  Pk_Malaysia <- merge(x = Pk_Malaysia, y = Pk_Malaysia_Simoa, by = "sample_ID", all.x = TRUE)
+  
+  Pk_Malaysia <- Pk_Malaysia %>% relocate(c(2:55), .after = last_col())
+  
+  Pk_Malaysia_final <- Pk_Malaysia[,!names(Pk_Malaysia) %in% c("CNTF", "FGF-21", "GDNF", "NfH", "Tau ptT81")] # Remove undetectable biomarkers
+  Pk_Malaysia_final$S100B[is.na(Pk_Malaysia_final$S100B)] <- 27.3045 # Follow statistician's advice on S100B: Values below range (<54.6091) are replaced by half the threshold value 
+  Pk_Malaysia_final$`Aβ(1-42)`[is.na(Pk_Malaysia_final$`Aβ(1-42)`)] <- 0.2197 # Follow statistician's advice on Aβ: Values below range (<0.4395) are replaced by half the threshold value
+  Pk_Malaysia_final <- Pk_Malaysia_final[,!names(Pk_Malaysia_final) %in% c("Serpin F1")] # Remove biomarkers w/o values in one of the groups
+  
+  for (i in 1:length(Pk_Malaysia_final$parasitaemia)) { # Transform parasitaemia from % to parasites/uL
+  if (!is.na(Pk_Malaysia_final$parasitaemia[i])) {
+    Pk_Malaysia_final$parasitaemia[i] <- Pk_Malaysia_final$parasitaemia[i] * 5000000
+  }
+}
+  
+# Reshape dataset for figures
+  
+  Pk_Malaysia_plots <- Pk_Malaysia_final %>% gather(Biomarker, Levels, 11:63)
+```
+
+## **Sample collection sites** 
+[Go back to index](#top)
+
+You can **hover over the map** with your cursor and click the different items to visualize hospital names.
+
+```{r, message=FALSE, warning=FALSE}
+Pk_Malaysia_provinces <- st_read("/home/cescualito/Dropbox/LABORAL/LSHTM/Wassmer Lab - Cesc Bertran-Cobo/Luminex/2023-05-09_Malaysia_samples/Analysis/Databases/gadm41_MYS_shp/gadm41_MYS_1.shp")
+
+Pk_Malaysia_provinces_CTRL <- Pk_Malaysia_provinces %>%
+  filter(NAME_1 %in% c("Johor", "Selangor", "Negeri Sembilan", "Kedah"))
+
+Pk_Malaysia_map <- leaflet(data) %>% # Create a leaflet map 
+  addTiles() %>%
+  setView(lng = 101.9758, lat = 4.2105, zoom = 6)  # Centered on Malaysia
+
+Pk_Malaysia_map <- Pk_Malaysia_map %>% # Highlight provinces where controls were recruited
+  addPolygons(
+    data = Pk_Malaysia_provinces_CTRL,
+    fillColor = "yellow",  
+    fillOpacity = 0.5, 
+    stroke = FALSE,
+    popup = ~NAME_1
+  )
+
+Pk_Malaysia_map_Pk_infected <- Pk_Malaysia_final %>% # Now filter out healthy control rows 
+  filter(!is.na(latitude) & !is.na(longitude) & !is.na(NAME_1) & !is.na(hospital))
+
+samples_per_hospital <- Pk_Malaysia_final %>% # This is to add number of samples collected per hospital
+  count(hospital) %>%
+  rename(samples_collected = n)
+Pk_Malaysia_map_Pk_infected <- left_join(Pk_Malaysia_map_Pk_infected, samples_per_hospital, by = "hospital")
+
+Pk_Malaysia_map <- Pk_Malaysia_map %>% # Add markers for hospitals with infected patients
+  addCircleMarkers(
+    data = Pk_Malaysia_map_Pk_infected,
+    lng = ~longitude,
+    lat = ~latitude,
+    color = "red",
+    radius = 5,
+    popup = ~paste("Hospital:", hospital, "<br>Province:", NAME_1, "<br>Samples collected:", samples_collected)
+  )
+
+Pk_Malaysia_map
+```
+
+<span style="background-color:red">*Pk*-infected patients</span> attending either a government hospital or private clinic in Johor, Selangor, Pahang, Perak, and Trengganu states were invited to participate. Recruitment of community-matched, age-matched <span style="background-color:yellow">uninfected controls</span> was conducted via active sample screening of individuals from communities in Johor, Selangor, Negeri Sembilan, and Kedah. Map was created in R with RStudio via [Leaflet](https://leafletjs.com/) and [OpenStreetMap](https://www.openstreetmap.org/copyright).
+
+## **Data normality** 
+[Go back to index](#top)
+
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+Pk_Malaysia_histograms <- ggplot(Pk_Malaysia_plots, aes(x=Levels, fill = status)) +
+  geom_histogram(alpha = 0.5) +
+  theme_classic() + 
+  ggtitle("Histograms: Biomarker levels") + 
+  facet_wrap(~Biomarker, scales = "free") + ylab("Count") +
+  scale_fill_manual(values=c("black", "red"), name = "Status") 
+
+Pk_Malaysia_histograms
+
+Pk_Malaysia_density <- ggplot(Pk_Malaysia_plots, aes(x=Levels, fill = status)) + 
+  geom_density(aes(y=1.1*after_stat(count)), na.rm = TRUE, alpha = 0.75) +
+  theme_classic() + 
+  ggtitle("Density plots: Biomarker levels") + 
+  facet_wrap(~Biomarker, scales = "free") + ylab("Count") +
+  scale_fill_manual(values=c("black", "red"), name = "Status")   
+
+Pk_Malaysia_density 
+```
+
+![**Histograms** *(right click to open full-size image in another tab/window)*](/home/cescualito/Dropbox/LABORAL/LSHTM/Wassmer Lab - Cesc Bertran-Cobo/Luminex/2023-05-09_Malaysia_samples/Analysis/Plots/Pk_Malaysia_histograms.png)
+
+Upon examination of histograms representing biomarker levels, it was evident that the distribution of most biomarkers deviates from normality. Given this, non-parametric statistical tests will be employed for group comparisons. By adopting this approach, we aimed to accurately assess differences in biomarker levels across teh two groups while minimizing the impact of non-normality on our analyses.
+
+![**Density plots** *(right click to open full-size image in another tab/window)*](/home/cescualito/Dropbox/LABORAL/LSHTM/Wassmer Lab - Cesc Bertran-Cobo/Luminex/2023-05-09_Malaysia_samples/Analysis/Plots/Pk_Malaysia_density.png)
+
+Similarly, upon inspection of density plots illustrating biomarker levels, it became apparent that the distribution of most biomarkers does not adhere to a normal distribution pattern. 
+
+## **Simple analysis of biomarker levels** 
+[Go back to index](#top)
+
+```{r, message=FALSE, warning=FALSE}
+Pk_Malaysia_summary <- Pk_Malaysia_plots %>%
+  group_by(Biomarker, status) %>%
+  summarise(
+    Participants = sum(!is.na(Levels)),  
+    Median = format(median(Levels, na.rm = TRUE), scientific = FALSE),  
+    IQR = format(IQR(Levels, na.rm = TRUE), scientific = FALSE)  
+  )
+
+Pk_Malaysia_summary_wide <- Pk_Malaysia_summary %>%
+  pivot_wider(names_from = status, values_from = c(Participants, Median, IQR)) 
+
+names(Pk_Malaysia_summary_wide) <- c("Biomarker", 
+                                      "n CTRL", "n Pk", 
+                                      "Median_Control", "Median_Pk_infection", 
+                                      "IQR_Control", "IQR_Pk_infection")
+
+Pk_Malaysia_summary_wide$Median_Control <- paste(Pk_Malaysia_summary_wide$Median_Control, 
+                                                 "(", Pk_Malaysia_summary_wide$IQR_Control, ")", sep = " ")
+Pk_Malaysia_summary_wide$Median_Pk_infection <- paste(Pk_Malaysia_summary_wide$Median_Pk_infection, 
+                                                      "(", Pk_Malaysia_summary_wide$IQR_Pk_infection, ")", sep = " ")
+
+Pk_Malaysia_summary_wide <- Pk_Malaysia_summary_wide[, -c(6, 7)]
+
+names(Pk_Malaysia_summary_wide)[names(Pk_Malaysia_summary_wide) == "Median_Control"] <- "Median (IQR) CTRL"
+names(Pk_Malaysia_summary_wide)[names(Pk_Malaysia_summary_wide) == "Median_Pk_infection"] <- "Median (IQR) Pk "
+```
+
+**Brain injury biomarkers**
+
+Bonferroni-corrected analyses revealed notable differences in plasma biomarker levels between *Pk*-infected individuals and uninfected controls. Specifically, the *Pk*-infected group exhibited significantly elevated levels of brain injury biomarkers such as **Tau**, **UCH-L1**, **αSyn**, **Park7**, **NRGN**, and **TDP-43**, whereas levels of **CaBD**, **CNTN1**, **NCAM-1**, **BDNF**, **GFAP**, and **KLK6** were significantly lower in the *Pk*-infected group. 
+
+Plasma levels of **S100B** and **Aβ(1-42)** were mostly undetectable in uninfected subjects, whereas the *Pk*-infected group showed significantly higher proportions of detectable levels for both biomarkers. Adjustments were made for individuals with undetectable levels, revealing significantly higher plasma **S100B** levels in the *Pk*-infected group after correction for multiple comparisons. 
+
+**Immune activation biomarkers**
+
+Regarding biomarkers of infection and immune activation, levels of anti-inflammatory cytokines **IL-1RA** and **IL-10**, and pro-inflammatory cytokine **MPO**, were significantly higher in the *Pk*-infected group, while chemokines **CCL4** and **CCL5**, pro-inflammatory cytokine **CRP**, and **RAGE** levels were significantly lower. 
+
+**Vascular biomarkers**
+
+Endothelial activation biomarkers such as **Ang-2/Ang-1 ratio** and **VCAM-1** levels were significantly elevated in *Pk*-infected patients, while **Ang-1**, **BMP-9**, **PDGF-AA** and **-BB**, and **Serpin E1** levels were significantly lower. 
+
+```{r, message=FALSE, warning=FALSE}
+Pk_Malaysia_final_renamed <- Pk_Malaysia_final
+names(Pk_Malaysia_final_renamed) <- make.names(names(Pk_Malaysia_final_renamed)) # Ooopsies had to correct variable names with symbols such as "-" or else cannot use the function below
+
+biomarkers <- names(Pk_Malaysia_final_renamed)[11:63]
+
+Pk_Malaysia_Bonferroni <- purrr::map_dfr(biomarkers, function(x) {
+  f <- as.formula(paste0("`", x, "`", '~ status'))  # Use backticks to handle column names with spaces or symbols
+  result <- wilcox.test(formula = f, data = Pk_Malaysia_final_renamed, exact = TRUE)
+  return(data.frame(name = x, p.value = result$p.value))
+})
+
+Pk_Malaysia_Bonferroni$p.adj <- p.adjust(Pk_Malaysia_Bonferroni$p,method="bonferroni")
+
+colnames(Pk_Malaysia_Bonferroni)[2:3] <- c("P value", "Corrected P value")
+
+Pk_Malaysia_summary_wide$Biomarker <- make.names(Pk_Malaysia_summary_wide$Biomarker)
+Pk_Malaysia_final_kable <- left_join(Pk_Malaysia_summary_wide, Pk_Malaysia_Bonferroni, by = c("Biomarker" = "name"))
+
+original_biomarker_names <- c("APP", # In the same order as they are in Pk_Malaysia_final_kable
+                              "Ang-1", 
+                              "Ang-2", 
+                              "Ang-2/Ang-1 ratio", 
+                              "Aβ(1-42)", 
+                              "BDNF", 
+                              "BMP-9", 
+                              "CCL18", 
+                              "CCL2", 
+                              "CCL4",
+                              "CCL5",
+                              "CNTN1",
+                              "CRP",
+                              "CaBD",
+                              "Fetuin A",
+                              "GFAP",
+                              "GM-CSF",
+                              "ICAM-1",
+                              "IFNγ",
+                              "IL-10",
+                              "IL-17",
+                              "IL-1RA",
+                              "IL-1α",
+                              "IL-1β",
+                              "IL-2",
+                              "IL-4",
+                              "IL-6",
+                              "IL-8",
+                              "KLK6",
+                              "Lipocalin 2",
+                              "MIF",
+                              "MPO",
+                              "NCAM-1",
+                              "NGF-β",
+                              "NRGN",
+                              "NSE",
+                              "NfL",
+                              "OPN",
+                              "PDGF AA",
+                              "PDGF BB",
+                              "Park7",
+                              "RAGE",
+                              "S100B",
+                              "Serpin E1",
+                              "TDP-43",
+                              "TNF-α",
+                              "Tau total",
+                              "UCHL-1",
+                              "VCAM-1",
+                              "VEGF",
+                              "YKL40",
+                              "vWF",
+                              "αSyn")
+Pk_Malaysia_final_kable$Biomarker <- original_biomarker_names
+
+Pk_Malaysia_final_kable <- Pk_Malaysia_final_kable %>%
+  kable(caption = "Biomarker median (pg/mL) and IQR, per group") %>%
+  kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+      column_spec(column = 6, bold = Pk_Malaysia_final_kable$`P value` < 0.05) %>%
+      column_spec(column = 7, bold = Pk_Malaysia_final_kable$`Corrected P value` < 0.05) 
+
+Pk_Malaysia_final_kable
+```
+
+![**Biomarkers of brain injury: Bonferroni-corrected group comparisons** *(right click to open full-size image in another tab/window)*](/home/cescualito/Dropbox/LABORAL/LSHTM/Wassmer Lab - Cesc Bertran-Cobo/Papers/P knowlesi Malaysia paper/1 - Figures/Pk_Malaysia_Figure_2_Brain_biomarker_levels_groups.jpg)
+
+## **Hierarchical clustering heatmaps** 
+[Go back to index](#top)
+
+### **Brain biomarker subset** 
+
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+Pk_Malaysia_final_brain_subset_list <- c(
+  "αSyn", "APP", "Aβ(1-42)", "BDNF", "CaBD", "CNTN1", "NSE",
+  "Fetuin A", "GFAP", "KLK6", "NCAM-1", "Lipocalin 2", "NGF-β", "NfL", "NRGN",
+  "Park7", "S100B", "TDP-43", "Tau total", "UCHL-1", "YKL40"
+)
+
+Pk_Malaysia_final_brain_subset <- Pk_Malaysia_final %>% select(Participants, Pk_Malaysia_final_brain_subset_list)
+
+row.names(Pk_Malaysia_final_brain_subset) <- Pk_Malaysia_final_brain_subset$Participants
+Pk_Malaysia_final_brain_subset$Participants <- NULL
+
+Pk_Malaysia_final_brain_subset[is.na(Pk_Malaysia_final_brain_subset)] <- 0 # Replace NAs with zeros
+Pk_Malaysia_final_brain_subset <- scale(Pk_Malaysia_final_brain_subset) # Scale data 
+
+Pk_Malaysia_final_brain_subset_dist <- dist(Pk_Malaysia_final_brain_subset) # Base R code
+Pk_Malaysia_final_brain_subset_hclust <- hclust(Pk_Malaysia_final_brain_subset_dist)
+plot(Pk_Malaysia_final_brain_subset_hclust)
+
+pheatmap(Pk_Malaysia_final_brain_subset, cutree_rows = 2, cutree_cols = 2, scale = "none")
+```
+![**Biomarkers of brain injury: Hierarchical clustering heatmap** *(right click to open full-size image in another tab/window)*](/home/cescualito/Dropbox/LABORAL/LSHTM/Wassmer Lab - Cesc Bertran-Cobo/Luminex/2023-05-09_Malaysia_samples/Analysis/Plots/Hierarchical clustering heatmap/Brain subset/Hierarchical clustering brain.png)
+
+Hierarchical clustering heatmap analysis unveiled distinct group patterns for brain injury biomarkers, delineating cohesive clusters predominantly composed of infected individuals with elevated levels of **S100B**, **Park7**, **αSyn**, and **TDP-43**. Notably, two infected individuals displayed atypical clustering with the healthy controls, indicating a subgroup with a unique biomarker profile. Conversely, in the control group, certain biomarkers including **BDNF**, **CaBD**, **CNTN1**, and **GFAP** formed cohesive clusters with higher levels, representing a baseline biomarker profile in healthy individuals. However, two infected individuals clustered with the control group in this category, suggesting potential overlap or similarity in the levels of these specific biomarkers between infected and control individuals.
+
+### **Immune biomarker subset** 
+
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+Pk_Malaysia_final_immune_subset_list <- c(
+  "CRP", "GM-CSF", "IFNγ", "IL-1α", "IL-1β", "IL-2", "IL-6", "IL-8",
+  "IL-17", "MIF", "MPO", "TNF-α", "IL-1RA", "IL-4", "IL-10",
+  "CCL2", "CCL4", "CCL5", "CCL18", "OPN", "RAGE"
+)
+
+Pk_Malaysia_final_immune_subset <- Pk_Malaysia_final %>% select(Participants, Pk_Malaysia_final_immune_subset_list)
+
+row.names(Pk_Malaysia_final_immune_subset) <- Pk_Malaysia_final_immune_subset$Participants
+Pk_Malaysia_final_immune_subset$Participants <- NULL
+
+Pk_Malaysia_final_immune_subset[is.na(Pk_Malaysia_final_immune_subset)] <- 0 # Replace NAs with zeros
+Pk_Malaysia_final_immune_subset <- scale(Pk_Malaysia_final_immune_subset) # Scale data 
+
+Pk_Malaysia_final_immune_subset_dist <- dist(Pk_Malaysia_final_immune_subset) # Base R code
+Pk_Malaysia_final_immune_subset_hclust <- hclust(Pk_Malaysia_final_immune_subset_dist)
+plot(Pk_Malaysia_final_immune_subset_hclust)
+
+pheatmap(Pk_Malaysia_final_immune_subset, scale = "none")
+```
+
+![**Biomarkers of infection and immunity: Hierarchical clustering heatmap** *(right click to open full-size image in another tab/window)*](/home/cescualito/Dropbox/LABORAL/LSHTM/Wassmer Lab - Cesc Bertran-Cobo/Luminex/2023-05-09_Malaysia_samples/Analysis/Plots/Hierarchical clustering heatmap/Immune subset/Hierarchical clustering immune.png)
+
+Clustering analysis of biomarkers associated with infection and immune activation did not reveal distinct separation between the two groups. Higher levels of **IL-1RA** and **MPO** predominantly clustered in the infected group, with two control individuals exhibiting similar patterns. Additionally, one infected individual displayed notably high levels of **IL-1β**, **GM-CSF**, **TNF-α**, **CCL4**, and **CCL2**, while another exhibited elevated levels of **OPN** and **IL-10**. Furthermore, one control individual showed high levels of **IL-6**.
+
+### **Vascular biomarker subset** 
+
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+Pk_Malaysia_final_vascular_subset_list <- c(
+  "Ang-1", "Ang-2", "Ang-2/Ang-1 ratio", "BMP-9", "ICAM-1",
+  "PDGF AA", "PDGF BB", "Serpin E1", "VCAM-1", "VEGF", "vWF"
+)
+
+Pk_Malaysia_final_vascular_subset <- Pk_Malaysia_final %>% select(Participants, Pk_Malaysia_final_vascular_subset_list)
+
+row.names(Pk_Malaysia_final_vascular_subset) <- Pk_Malaysia_final_vascular_subset$Participants
+Pk_Malaysia_final_vascular_subset$Participants <- NULL
+
+Pk_Malaysia_final_vascular_subset[is.na(Pk_Malaysia_final_vascular_subset)] <- 0 # Replace NAs with zeros
+Pk_Malaysia_final_vascular_subset <- scale(Pk_Malaysia_final_vascular_subset) # Scale data 
+
+Pk_Malaysia_final_vascular_subset_dist <- dist(Pk_Malaysia_final_vascular_subset) # Base R code
+Pk_Malaysia_final_vascular_subset_hclust <- hclust(Pk_Malaysia_final_vascular_subset_dist)
+plot(Pk_Malaysia_final_vascular_subset_hclust)
+
+pheatmap(Pk_Malaysia_final_vascular_subset, cutree_rows = 2, cutree_cols = 2,  scale = "none")
+```
+
+![**Vascular biomarkers: Hierarchical clustering heatmap** *(right click to open full-size image in another tab/window)*](/home/cescualito/Dropbox/LABORAL/LSHTM/Wassmer Lab - Cesc Bertran-Cobo/Luminex/2023-05-09_Malaysia_samples/Analysis/Plots/Hierarchical clustering heatmap/Vascular subset/Hierarchical clustering vascular.png)
+
+Lastly, clustering of vascular biomarkers exhibited clear and distinctive group profiles. In the control group, a cohesive cluster characterized by high levels of **PDGF-AA**, **Ang-1**, **PDGF-BB**, **Serpin E1**, and **BMP-9** was observed. Conversely, in the infected group, a distinct cluster with higher levels of **VCAM-1** and the **Ang-2/Ang-1 ratio** was identified.
+
+## **Biomarker correlation with age** 
+
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+Pk_Malaysia_age <- Pk_Malaysia_plots %>%    
+  ggplot(aes(y = Levels, x = age, color=status, group = sample_ID)) +
+  geom_point(size = 1.5) + 
+  geom_smooth(method = lm, formula = y ~ x, se = FALSE) + 
+  xlab("Age") + ylab("pg/mL") +
+  theme_classic() + 
+  ggtitle("") + 
+  facet_wrap(~Biomarker, scales = "free") +
+  scale_color_manual(values=c("black", "red"), name = "Status") + 
+  stat_cor(method = "spearman") + 
+  geom_smooth(method = lm, formula = y ~ x, se = FALSE)
+
+Pk_Malaysia_age
+```
+
+![**Biomarker correlation with age** *(right click to open full-size image in another tab/window)*](/home/cescualito/Dropbox/LABORAL/LSHTM/Wassmer Lab - Cesc Bertran-Cobo/Luminex/2023-05-09_Malaysia_samples/Analysis/Plots/Pk_Malaysia_age.png)
+
+No significant correlations were identified between the levels of any of the examined biomarkers and the age of participants within each respective group.
+
+## **Biomarker correlation with parasitaemia** 
+
+```{r, message=FALSE, warning=FALSE, fig.show='hide'}
+Pk_Malaysia_par <- Pk_Malaysia_plots %>%    
+  ggplot(aes(y = Levels, x = parasitaemia, color=status, group = sample_ID)) +
+  geom_point(size = 1.5) + 
+  geom_smooth(method = lm, formula = y ~ x, se = FALSE) + 
+  xlab("Parasites/μL") + ylab("pg/mL") +
+  theme_classic() + 
+  ggtitle("") + 
+  facet_wrap(~Biomarker, scales = "free") +
+  scale_color_manual(values=c("black", "red"), name = "Status") + 
+  stat_cor(method = "spearman") + 
+  geom_smooth(method = lm, formula = y ~ x, se = FALSE) +
+  scale_x_continuous(labels = scales::scientific_format(digits = 1, decimal.mark = ",", big.mark = "x10^")) +
+  scale_y_continuous(labels = scales::scientific_format(digits = 1, decimal.mark = ",", big.mark = "x10^"))
+
+Pk_Malaysia_par
+```
+
+![**Biomarker correlation with parasitaemia** *(right click to open full-size image in another tab/window)*](/home/cescualito/Dropbox/LABORAL/LSHTM/Wassmer Lab - Cesc Bertran-Cobo/Luminex/2023-05-09_Malaysia_samples/Analysis/Plots/Pk_Malaysia_par.png)
+
+Furthermore, within the *Pk*-infected group, no significant correlations were observed between biomarker levels and the percentage of parasitaemia.
+
+# **Codebook** 
+[Go back to index](#top)
+
+```{r}
+Pk_Malaysia_final_codebook <- describe(Pk_Malaysia_final[, -which(names(Pk_Malaysia_final) == "sample_ID")])
+Pk_Malaysia_final_codebook
+```
