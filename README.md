@@ -2,7 +2,7 @@
 
 We investigated circulating levels of brain injury, inflammation, and vascular biomarkers in a cohort of *Plasmodium knowlesi*-infected patients and uninfected healthy controls from Peninsular Malaysia.
 
-Preprint available in [medRxiv](https://www.medrxiv.org/content/10.1101/2024.04.25.24306382v1) with DOI: 10.1101/2024.04.25.24306382 
+Published version available in [JID](https://academic.oup.com/jid/advance-article/doi/10.1093/infdis/jiae553/7916492?login=false) with DOI: 10.1093/infdis/jiae553
 
 
 ## Study collaborators
@@ -23,4 +23,5 @@ Cesc Bertran-Cobo, Elin Dumont, Naqib Rafieqin Noordin, Meng-Yee Lai, William St
 
 ## Publication link
 
+The published version can be found [here](https://academic.oup.com/jid/advance-article/doi/10.1093/infdis/jiae553/7916492?login=false).
 The original manuscript can be found [here](https://www.medrxiv.org/content/10.1101/2024.04.25.24306382v1).
